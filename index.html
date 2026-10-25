@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark" data-compact="0">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>个人控制台</title>
+<style>
+/* ==========================================================
+   商业级深色控制台风格（原创，仅采用通用行业设计语言）
+   - 近黑灰蓝底 + 玻璃质感表面
+   - 细边框、圆角克制、留白充足、强调色仅用于状态与关键操作
+   ========================================================== */
+:root{
+  --accent:#6ea8ff;
+  --accent-strong:#8fbcff;
+  --accent-ink:#0b1220;
+  --bg:#0c0e12;
+  --bg-2:#13151a;
+  --bg-3:#1a1d23;
+  --bg-4:#23272f;
+  --line:rgba(255,255,255,.075);
+  --line-strong:rgba(255,255,255,.13);
+  --fg:#f2f5f9;
+  --fg-dim:#9aa4b2;
+  --fg-mute:#656f7d;
+  --ok:#34d399;
+  --warn:#fbbf24;
+  --err:#f87171;
+  --radius:12px;
+  --radius-sm:9px;
+  --fs:15px;
+  --pad:22px;
+  --mono:ui-monospace,"SF Mono","Cascadia Code",Consolas,"Liberation Mono",monospace;
+  --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Roboto,sans-serif;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.28);
+  --shadow-md:0 8px 24px rgba(0,0,0,.26);
+  --shadow-lg:0 18px 48px rgba(0,0,0,.34);
+  --bg-top:radial-gradient(1200px 520px at 85% -15%, rgba(110,168,255,.10), transparent 60%),
+           radial-gradient(900px 480px at -10% 115%, rgba(52,211,153,.055), transparent 55%),
+           linear-gradient(180deg,#0c0e12 0%,#0e1116 48%,#0c0e12 100%);
+}
+html[data-theme="light"]{
+  --bg:#f5f7fa;
+  --bg-2:#ffffff;
+  --bg-3:#f2f4f8;
+  --bg-4:#e9edf3;
+  --line:rgba(16,24,40,.09);
+  --line-strong:rgba(16,24,40,.15);
+  --fg:#15202b;
+  --fg-dim:#4b5563;
+  --fg-mute:#8a94a3;
+  --accent:#2563eb;
+  --accent-strong:#3b82f6;
+  --accent-ink:#ffffff;
+  --ok:#0f9d6b;
+  --warn:#b45309;
+  --err:#dc2626;
+  --shadow-sm:0 1px 2px rgba(16,24,40,.06);
+  --shadow-md:0 10px 26px rgba(16,24,40,.08);
+  --shadow-lg:0 18px 44px rgba(16,24,40,.12);
+  --bg-top:radial-gradient(1200px 520px at 85% -15%, rgba(37,99,235,.08), transparent 60%),
+           radial-gradient(900px 480px at -10% 115%, rgba(15,157,107,.05), transparent 55%),
+           linear-gradient(180deg,#f5f7fa 0%,#f2f4f8 55%,#eef2f7 100%);
+}
+html[data-compact="1"]{ --pad:15px; --radius:10px; --fs:14px; }
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--sans);
+  font-size:var(--fs);
+  background-color:var(--bg);
+  background-image:var(--bg-top);
+  background-attachment:fixed;
+  color:var(--fg);
+  line-height:1.65;
+  letter-spacing:.011em;
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none}
+::selection{background:color-mix(in srgb,var(--accent) 30%,transparent)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--bg-4);border-radius:8px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:var(--line-strong);background-clip:padding-box}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ============ 布局骨架 ============ */
+.app{display:flex;height:100vh;height:100dvh}
+
+.rail{
+  width:216px;
+  flex:0 0 216px;
+  background:color-mix(in srgb,var(--bg-2) 92%,transparent);
+  border-right:1px solid var(--line);
+  display:flex;
+  flex-direction:column;
+  padding:16px 12px;
+  gap:5px;
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+
+.brand{
+  display:flex;align-items:center;gap:11px;
+  padding:6px 10px 18px;
+}
+.logo{
+  width:34px;height:34px;border-radius:10px;flex:0 0 34px;
+  background:linear-gradient(135deg,#7db1ff,#3b82f6 55%,#1d4ed8);
+  display:grid;place-items:center;color:#fff;
+  box-shadow:0 4px 14px rgba(37,99,235,.28), inset 0 1px 0 rgba(255,255,255,.32);
+}
+.brand b{font-size:15px;font-weight:650;letter-spacing:.2px;display:block;line-height:1.25}
+.brand small{color:var(--fg-mute);font-size:10.5px;letter-spacing:2.2px;font-weight:520}
+
+.nav-item{
+  display:flex;align-items:center;gap:11px;
+  padding:9px 11px;border-radius:var(--radius-sm);
+  color:var(--fg-dim);font-size:13.8px;letter-spacing:.2px;
+  transition:background .15s,color .15s,box-shadow .15s;
+  text-align:left;width:100%;
+  position:relative;
+}
+.nav-item svg{flex:0 0 18px;opacity:.85}
+.nav-item:hover{background:var(--bg-3);color:var(--fg)}
+.nav-item.active{
+  background:color-mix(in srgb,var(--accent) 14%,transparent);
+  color:var(--accent);font-weight:600;
+}
+.nav-item.active svg{opacity:1}
+.nav-item .cnt{
+  margin-left:auto;font-size:11px;font-weight:600;letter-spacing:.4px;
+  padding:1px 8px;border-radius:20px;
+  background:color-mix(in srgb,var(--accent) 18%,transparent);
+  color:var(--accent);
+}
+
+.rail-foot{margin-top:auto;padding:12px 10px 4px;border-top:1px solid var(--line)}
+.rail-foot .stat{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--fg-mute)}
+.rail-foot .stat + .stat{margin-top:7px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--fg-mute);flex:0 0 7px}
+.dot.on{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 20%,transparent)}
+.dot.off{background:var(--err)}
+
+.stage{flex:1;min-width:0;display:flex;flex-direction:column;background:transparent}
+.view{flex:1;min-height:0;display:none;flex-direction:column}
+.view.active{display:flex}
+
+.vhead{
+  padding:16px var(--pad);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  background:color-mix(in srgb,var(--bg-2) 88%,transparent);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  flex:0 0 auto;
+}
+.vhead h1{font-size:16.5px;font-weight:640;letter-spacing:.1px}
+.vhead .sub{color:var(--fg-mute);font-size:12.5px;margin-top:1px}
+.vhead .right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.vbody{flex:1;min-height:0;overflow-y:auto;padding:var(--pad)}
+
+/* ============ 通用控件 ============ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:8px 14px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:540;
+  background:var(--bg-3);color:var(--fg-dim);border:1px solid var(--line);
+  transition:.15s;white-space:nowrap;box-shadow:var(--shadow-sm);
+}
+.btn:hover{background:var(--bg-4);color:var(--fg);border-color:var(--line-strong)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn.primary{
+  background:linear-gradient(180deg,var(--accent-strong),var(--accent));
+  color:var(--accent-ink);border-color:transparent;font-weight:620;
+  box-shadow:0 2px 10px color-mix(in srgb,var(--accent) 30%,transparent);
+}
+.btn.primary:hover{filter:brightness(1.06);color:var(--accent-ink)}
+.btn.ghost{background:transparent;box-shadow:none}
+.btn.ghost:hover{background:var(--bg-3)}
+.btn.sm{padding:5.5px 11px;font-size:12.5px;border-radius:8px}
+.btn.danger{color:var(--err);border-color:color-mix(in srgb,var(--err) 35%,var(--line))}
+.btn.danger:hover{background:color-mix(in srgb,var(--err) 14%,transparent)}
+.btn.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,var(--line))}
+
+.field{display:flex;flex-direction:column;gap:7px}
+.field > label{font-size:12.5px;color:var(--fg-dim);font-weight:530;letter-spacing:.2px}
+.field .hint{font-size:11.5px;color:var(--fg-mute);line-height:1.55}
+input[type=text],input[type=password],input[type=number],input[type=url],textarea,select{
+  width:100%;padding:9px 12px;border-radius:var(--radius-sm);
+  background:var(--bg-3);border:1px solid var(--line);
+  color:var(--fg);font-size:13.5px;outline:none;
+  transition:border-color .15s,box-shadow .15s,background .15s;
+}
+input:hover,textarea:hover,select:hover{border-color:var(--line-strong)}
+input:focus,textarea:focus,select:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 15%,transparent);
+}
+textarea{resize:vertical;min-height:64px;font-family:var(--sans);line-height:1.6}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--fg-mute) 50%),linear-gradient(135deg,var(--fg-mute) 50%,transparent 50%);
+  background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:34px}
+input[type=range]{width:100%;accent-color:var(--accent);height:5px;cursor:pointer}
+
+.switch{display:inline-flex;align-items:center;gap:9px;cursor:pointer;font-size:13.5px;color:var(--fg-dim)}
+.switch input{display:none}
+.switch .track{
+  width:38px;height:22px;border-radius:11px;background:var(--bg-4);
+  border:1px solid var(--line);position:relative;transition:.18s;flex:0 0 38px;
+}
+.switch .track::after{
+  content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;
+  border-radius:50%;background:#9aa4b2;transition:.18s;
+}
+.switch input:checked + .track{background:var(--accent);border-color:transparent}
+.switch input:checked + .track::after{left:18px;background:#fff}
+
+.badge{
+  display:inline-flex;align-items:center;gap:5px;padding:2.5px 9px;border-radius:20px;
+  font-size:11.5px;font-weight:570;letter-spacing:.3px;
+  background:var(--bg-4);color:var(--fg-dim);border:1px solid var(--line);
+}
+.badge.on{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok);border-color:color-mix(in srgb,var(--ok) 30%,transparent)}
+.badge.off{background:color-mix(in srgb,var(--err) 14%,transparent);color:var(--err);border-color:color-mix(in srgb,var(--err) 28%,transparent)}
+.badge.warn{background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn);border-color:color-mix(in srgb,var(--warn) 28%,transparent)}
+
+.card{
+  background:linear-gradient(180deg,var(--bg-2),color-mix(in srgb,var(--bg-2) 96%,var(--bg-3)));
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:var(--pad);
+  box-shadow:var(--shadow-md);
+}
+.card + .card{margin-top:14px}
+.card h3{font-size:13.6px;font-weight:620;margin-bottom:15px;letter-spacing:.2px;display:flex;align-items:center;gap:9px}
+.card h3 .idx{
+  color:var(--accent);font-family:var(--mono);font-size:11px;font-weight:560;letter-spacing:1.2px;
+  background:color-mix(in srgb,var(--accent) 12%,transparent);
+  padding:2px 8px;border-radius:6px;
+}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.row{display:flex;gap:10px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.spacer{flex:1}
+.stack{display:flex;flex-direction:column;gap:14px}
+
+/* ============ 聊天 ============ */
+#view-chat .split{flex:1;min-height:0;display:flex}
+.chat-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.chat-log{flex:1;min-height:0;overflow-y:auto;padding:calc(var(--pad) + 4px) var(--pad);display:flex;flex-direction:column;gap:17px}
+.msg{display:flex;gap:12px;max-width:920px;width:100%}
+.msg .av{
+  width:30px;height:30px;border-radius:9px;flex:0 0 30px;display:grid;place-items:center;
+  font-size:11.5px;font-weight:650;margin-top:2px;letter-spacing:.4px;
+}
+.msg.user .av{background:var(--bg-4);color:var(--fg-dim);border:1px solid var(--line)}
+.msg.assistant .av{
+  background:linear-gradient(135deg,#7db1ff,#3b82f6 55%,#1d4ed8);
+  color:#fff;box-shadow:0 3px 12px rgba(37,99,235,.25);
+}
+.msg .bub{min-width:0;flex:1;padding-top:2px}
+.msg .who{font-size:11.5px;color:var(--fg-mute);margin-bottom:5px;letter-spacing:.4px;display:flex;align-items:center;gap:8px;font-weight:540}
+.msg .txt{white-space:normal;word-break:break-word;font-size:14.6px;line-height:1.78}
+.msg.user .txt{
+  background:var(--bg-3);border:1px solid var(--line);
+  border-radius:2px 11px 11px 11px;padding:11px 15px;
+}
+.msg .txt p{margin:0 0 .75em}
+.msg .txt p:last-child{margin-bottom:0}
+.msg .txt pre{
+  background:#0a0c0f;border:1px solid var(--line);border-left:2px solid color-mix(in srgb,var(--accent) 55%,transparent);
+  border-radius:9px;padding:13px 15px;overflow-x:auto;margin:.75em 0;font-size:12.9px;line-height:1.62;
+}
+html[data-theme="light"] .msg .txt pre{background:#1e2630;color:#e6edf5}
+.msg .txt pre code{font-family:var(--mono);background:none;padding:0;border:none;font-size:inherit;color:inherit}
+.msg .txt code{font-family:var(--mono);background:color-mix(in srgb,var(--accent) 10%,var(--bg-3));color:var(--accent-strong);padding:1.5px 5.5px;border-radius:5px;font-size:.9em}
+.msg .txt strong{font-weight:650}
+.msg .meta{margin-top:8px;font-size:11px;color:var(--fg-mute);font-family:var(--mono);display:flex;gap:12px;opacity:0;transition:.15s}
+.msg:hover .meta{opacity:1}
+.empty{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;color:var(--fg-mute);text-align:center;padding:44px;
+}
+.empty .big{
+  width:58px;height:58px;border-radius:16px;display:grid;place-items:center;
+  background:color-mix(in srgb,var(--accent) 10%,transparent);
+  border:1px solid var(--line);color:var(--accent);margin-bottom:4px;
+}
+.empty p{font-size:13px;max-width:360px;line-height:1.75}
+
+.composer{
+  flex:0 0 auto;border-top:1px solid var(--line);
+  padding:12px var(--pad) calc(13px + env(safe-area-inset-bottom));
+  background:color-mix(in srgb,var(--bg-2) 92%,transparent);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.composer .shell{
+  border:1px solid var(--line);border-radius:13px;
+  background:var(--bg-3);
+  padding:10px 11px 9px;transition:border-color .15s,box-shadow .15s;
+  box-shadow:var(--shadow-sm);
+}
+.composer .shell:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 14%,transparent)}
+.composer textarea{
+  border:none;background:none;padding:3px 4px;min-height:46px;max-height:220px;
+  resize:none;box-shadow:none !important;font-size:14.6px;
+}
+.composer .bar{display:flex;align-items:center;gap:8px;padding:6px 2px 0}
+.composer .bar .kbd{
+  font-size:11px;color:var(--fg-mute);font-family:var(--mono);
+  padding:2px 7px;border:1px solid var(--line);border-radius:6px;background:var(--bg-2);
+}
+
+.chat-side{
+  width:274px;flex:0 0 274px;border-left:1px solid var(--line);
+  background:color-mix(in srgb,var(--bg-2) 92%,transparent);
+  display:flex;flex-direction:column;overflow-y:auto;
+}
+.side-sec{padding:15px 17px;border-bottom:1px solid var(--line)}
+.side-sec:last-child{border-bottom:none}
+.side-sec h4{font-size:10.8px;color:var(--fg-mute);letter-spacing:1.6px;text-transform:uppercase;margin-bottom:12px;font-weight:650}
+.side-field{display:flex;flex-direction:column;gap:5px;margin-bottom:11px}
+.side-field:last-child{margin-bottom:0}
+.side-field label{font-size:11.5px;color:var(--fg-dim);font-weight:520}
+.side-field input,.side-field select,.side-field textarea{font-size:12.6px;padding:7px 10px}
+.side-field textarea{min-height:82px}
+.kv{display:flex;justify-content:space-between;font-size:12px;padding:3.5px 0;gap:10px}
+.kv span:first-child{color:var(--fg-mute)}
+.kv span:last-child{font-family:var(--mono);color:var(--fg-dim);text-align:right;word-break:break-all}
+
+/* ============ 隧道 ============ */
+.tun-list{display:flex;flex-direction:column;gap:11px}
+.tun{
+  border:1px solid var(--line);border-radius:var(--radius);
+  background:linear-gradient(180deg,var(--bg-2),color-mix(in srgb,var(--bg-2) 95%,var(--bg-3)));
+  padding:15px 17px;display:flex;align-items:center;gap:16px;
+  transition:border-color .15s,box-shadow .15s;box-shadow:var(--shadow-sm);
+}
+.tun:hover{border-color:var(--line-strong)}
+.tun.live{
+  border-color:color-mix(in srgb,var(--ok) 35%,var(--line));
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--ok) 12%,transparent),var(--shadow-md);
+}
+.tun .lead{flex:1;min-width:0}
+.tun .name{font-size:14px;font-weight:610;display:flex;align-items:center;gap:10px;margin-bottom:5px}
+.tun .meta{font-size:11.8px;color:var(--fg-mute);display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono)}
+.tun .pub{
+  font-family:var(--mono);font-size:12.2px;color:var(--accent-strong);
+  background:color-mix(in srgb,var(--accent) 10%,transparent);
+  border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);
+  padding:3px 9px;border-radius:7px;margin-top:8px;display:inline-block;
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.2px;
+}
+.tun .acts{display:flex;gap:7px;flex:0 0 auto}
+.tun-form{display:grid;grid-template-columns:1.4fr 1fr 1fr auto;gap:11px;align-items:end}
+.dial{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--fg-mute)}
+.dial .b{width:100%;height:7px;border-radius:4px;background:var(--bg-3);overflow:hidden;position:relative;border:1px solid var(--line)}
+.dial .b i{position:absolute;inset:0;width:0;background:linear-gradient(90deg,var(--ok),var(--accent));transition:width .5s}
+
+/* ============ 设置 ============ */
+.set-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;align-items:start}
+.sw-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:9px 0}
+.sw-row + .sw-row{border-top:1px solid var(--line)}
+.sw-row .lb{font-size:13.5px}
+.sw-row .lb small{display:block;color:var(--fg-mute);font-size:11.5px;margin-top:2px}
+.theme-opts{display:flex;gap:8px}
+.theme-opts button{
+  flex:1;padding:11px;border-radius:10px;border:1.5px solid var(--line);
+  background:var(--bg-3);font-size:12.5px;color:var(--fg-dim);transition:.15s;
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+}
+.theme-opts button:hover{border-color:var(--line-strong);color:var(--fg)}
+.theme-opts button.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.theme-opts .sw{width:100%;height:26px;border-radius:6px;border:1px solid var(--line)}
+.sw-dark{background:linear-gradient(135deg,#0c0e12,#23272f)}
+.sw-light{background:linear-gradient(135deg,#f5f7fa,#e9edf3)}
+.sw-auto{background:linear-gradient(135deg,#0c0e12 50%,#f5f7fa 50%)}
+.danger-zone{border-color:color-mix(in srgb,var(--err) 30%,var(--line))!important}
+
+/* ============ 浮层 ============ */
+#toasts{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;gap:8px;z-index:200;pointer-events:none;align-items:center;
+}
+.toast{
+  background:color-mix(in srgb,var(--bg-2) 94%,transparent);
+  color:var(--fg);border:1px solid var(--line-strong);
+  padding:10px 18px;border-radius:11px;font-size:13px;
+  box-shadow:var(--shadow-lg);
+  animation:tin .22s ease-out;max-width:80vw;letter-spacing:.3px;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+}
+.toast.err{background:color-mix(in srgb,var(--err) 18%,var(--bg-2));border-color:color-mix(in srgb,var(--err) 42%,var(--line))}
+.toast.ok{background:color-mix(in srgb,var(--ok) 15%,var(--bg-2));border-color:color-mix(in srgb,var(--ok) 38%,var(--line))}
+@keyframes tin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.typing i{
+  display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--fg-mute);
+  margin-right:4px;animation:bl 1.2s infinite;
+}
+.typing i:nth-child(2){animation-delay:.18s}
+.typing i:nth-child(3){animation-delay:.36s}
+@keyframes bl{0%,60%,100%{opacity:.25}30%{opacity:1}}
+
+/* ============ 响应式 ============ */
+@media (max-width:900px){
+  .chat-side{display:none}
+  .chat-side.show{
+    display:flex;position:absolute;right:0;top:0;bottom:0;z-index:50;
+    box-shadow:var(--shadow-lg);border-left:1px solid var(--line-strong);
+  }
+  .grid3{grid-template-columns:1fr}
+  .tun-form{grid-template-columns:1fr 1fr}
+}
+@media (max-width:720px){
+  .app{flex-direction:column}
+  .rail{
+    width:100%;flex:0 0 auto;border-right:none;border-bottom:1px solid var(--line);
+    flex-direction:row;padding:8px 10px;gap:4px;align-items:center;overflow-x:auto;
+  }
+  .brand{padding:0 8px 0 2px}
+  .brand .txt{display:none}
+  .nav-item{width:auto;flex:0 0 auto;padding:8px 12px;font-size:13px}
+  .nav-item span.lb{display:none}
+  .nav-item .cnt{display:none}
+  .rail-foot{display:none}
+  .grid2{grid-template-columns:1fr}
+  .tun-form{grid-template-columns:1fr}
+  .tun{flex-wrap:wrap}
+  .tun .acts{width:100%;justify-content:flex-end}
+  .kbd{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ================= 左侧导航 ================= -->
+  <nav class="rail">
+    <div class="brand">
+      <div class="logo">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      </div>
+      <div class="txt">
+        <b>个人控制台</b>
+        <small>CONSOLE</small>
+      </div>
+    </div>
+
+    <button class="nav-item active" data-view="chat">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.9 8.9 0 0 1-4-.9L3 21l1.9-4.5A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/></svg>
+      <span class="lb">AI 聊天接入</span>
+      <span class="cnt" id="navChatCnt" style="display:none"></span>
+    </button>
+
+    <button class="nav-item" data-view="tunnel">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h4l2-6 3 12 2-6h5"/></svg>
+      <span class="lb">内网穿透</span>
+      <span class="cnt" id="navTunCnt" style="display:none"></span>
+    </button>
+
+    <button class="nav-item" data-view="settings">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      <span class="lb">我的设置</span>
+    </button>
+
+    <div class="rail-foot">
+      <div class="stat"><i class="dot" id="apiDot"></i><span id="apiStat">API 未配置</span></div>
+      <div class="stat"><i class="dot" id="tunDot"></i><span id="tunStat">穿透未连接</span></div>
+    </div>
+  </nav>
+
+  <!-- ================= 主区 ================= -->
+  <main class="stage">
+
+    <!-- ---------- 视图一：AI 聊天接入 ---------- -->
+    <section class="view active" id="view-chat">
+      <header class="vhead">
+        <div>
+          <h1>AI 聊天接入</h1>
+          <div class="sub">OpenAI 兼容协议 · 直连你的模型服务</div>
+        </div>
+        <div class="right">
+          <button class="btn ghost sm" id="toggleSide">参数</button>
+          <button class="btn ghost sm" id="clearChat">清空对话</button>
+        </div>
+      </header>
+
+      <div class="split">
+        <div class="chat-main">
+          <div class="chat-log" id="chatLog">
+            <div class="empty" id="chatEmpty">
+              <div class="big">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.9 8.9 0 0 1-4-.9L3 21l1.9-4.5A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/></svg>
+              </div>
+              <p>还没有对话。先在右侧确认接口地址与密钥，然后开始第一句话。</p>
+            </div>
+          </div>
+
+          <div class="composer">
+            <div class="shell">
+              <textarea id="chatInput" rows="1" placeholder="输入消息…"></textarea>
+              <div class="bar">
+                <span class="kbd">Ctrl</span><span class="kbd">Enter 发送</span>
+                <span class="spacer"></span>
+                <span id="tokenHint" style="color:var(--fg-mute);font-size:11.5px"></span>
+                <button class="btn sm danger" id="stopBtn" style="display:none">停止</button>
+                <button class="btn primary sm" id="sendBtn">发送</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧参数栏 -->
+        <aside class="chat-side" id="chatSide">
+          <div class="side-sec">
+            <h4>接口</h4>
+            <div class="side-field">
+              <label>Base URL</label>
+              <input type="text" id="cfgBase" placeholder="https://api.openai.com/v1">
+            </div>
+            <div class="side-field">
+              <label>API Key</label>
+              <input type="password" id="cfgKey" placeholder="sk-...">
+            </div>
+            <div class="side-field">
+              <label>模型</label>
+              <input type="text" id="cfgModel" list="modelList" placeholder="gpt-4o-mini">
+              <datalist id="modelList">
+                <option value="gpt-4o-mini"></option>
+                <option value="gpt-4o"></option>
+                <option value="deepseek-chat"></option>
+                <option value="qwen-plus"></option>
+                <option value="glm-4-flash"></option>
+              </datalist>
+            </div>
+          </div>
+
+          <div class="side-sec">
+            <h4>生成参数</h4>
+            <div class="side-field">
+              <label>温度 <b id="tempVal" style="color:var(--accent)">0.7</b></label>
+              <input type="range" id="cfgTemp" min="0" max="2" step="0.1" value="0.7">
+            </div>
+            <div class="side-field">
+              <label>最大回复 tokens</label>
+              <input type="number" id="cfgMaxTok" min="0" step="64" placeholder="2048">
+            </div>
+            <div class="side-field">
+              <label>系统提示词</label>
+              <textarea id="cfgSystem" placeholder="你是我的私人助理…"></textarea>
+            </div>
+            <div class="sw-row" style="border:none;padding:6px 0">
+              <span class="lb">流式输出</span>
+              <label class="switch"><input type="checkbox" id="cfgStream" checked><i class="track"></i></label>
+            </div>
+          </div>
+
+          <div class="side-sec">
+            <h4>本次会话</h4>
+            <div class="kv"><span>消息数</span><span id="statMsgs">0</span></div>
+            <div class="kv"><span>累计 tokens</span><span id="statTok">—</span></div>
+            <div class="kv"><span>上次耗时</span><span id="statLat">—</span></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ---------- 视图二：内网穿透 ---------- -->
+    <section class="view" id="view-tunnel">
+      <header class="vhead">
+        <div>
+          <h1>内网穿透</h1>
+          <div class="sub">本地服务映射到公网 · 由你的控制端下发隧道</div>
+        </div>
+        <div class="right">
+          <span class="badge" id="ctrlBadge">控制端未配置</span>
+          <button class="btn ghost sm" id="refreshTun">刷新状态</button>
+        </div>
+      </header>
+
+      <div class="vbody">
+        <div class="card">
+          <h3><span class="idx">01</span> 新增映射</h3>
+          <div class="tun-form">
+            <div class="field">
+              <label>名称</label>
+              <input type="text" id="tunName" placeholder="我的 NAS / 开发服务器">
+            </div>
+            <div class="field">
+              <label>本地端口</label>
+              <input type="number" id="tunPort" placeholder="8080" min="1" max="65535">
+            </div>
+            <div class="field">
+              <label>协议</label>
+              <select id="tunProto">
+                <option value="http">HTTP</option>
+                <option value="https">HTTPS</option>
+                <option value="tcp">TCP</option>
+              </select>
+            </div>
+            <button class="btn primary" id="addTun">添加</button>
+          </div>
+          <div class="hint" style="color:var(--fg-mute);font-size:11.5px;margin-top:11px">
+            隧道实际建立由控制端完成；此处保存映射清单并通过控制端 API 启停。未配置控制端时仅保存配置。
+          </div>
+        </div>
+
+        <div class="card">
+          <h3><span class="idx">02</span> 映射列表 <span class="badge" id="tunCount" style="margin-left:auto">0</span></h3>
+          <div class="tun-list" id="tunList"></div>
+        </div>
+
+        <div class="card">
+          <h3><span class="idx">03</span> 连通性</h3>
+          <div class="dial" style="margin-bottom:11px">
+            <span style="flex:0 0 90px">控制端延迟</span>
+            <div class="b"><i id="dialBar"></i></div>
+            <span id="dialVal" style="font-family:var(--mono);flex:0 0 60px;text-align:right">—</span>
+          </div>
+          <div class="row">
+            <button class="btn sm" id="pingCtrl">测试控制端</button>
+            <span class="spacer"></span>
+            <span style="font-size:11.5px;color:var(--fg-mute)" id="ctrlUrlShow">—</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 视图三：我的设置 ---------- -->
+    <section class="view" id="view-settings">
+      <header class="vhead">
+        <div>
+          <h1>我的设置</h1>
+          <div class="sub">外观、接口、控制端与数据</div>
+        </div>
+        <div class="right">
+          <button class="btn ghost sm" id="exportCfg">导出配置</button>
+          <button class="btn ghost sm" id="importCfg">导入配置</button>
+        </div>
+      </header>
+
+      <div class="vbody">
+        <div class="set-grid">
+
+          <div class="card">
+            <h3><span class="idx">A</span> 外观</h3>
+            <div class="field" style="margin-bottom:14px">
+              <label>主题</label>
+              <div class="theme-opts">
+                <button data-theme="dark" class="on"><i class="sw sw-dark"></i>深色</button>
+                <button data-theme="light"><i class="sw sw-light"></i>浅色</button>
+                <button data-theme="auto"><i class="sw sw-auto"></i>跟随系统</button>
+              </div>
+            </div>
+            <div class="field" style="margin-bottom:14px">
+              <label>强调色</label>
+              <div class="row" id="accentRow">
+                <button class="btn sm" data-accent="#6ea8ff" style="border-color:#6ea8ff">蓝</button>
+                <button class="btn sm" data-accent="#34d399" style="border-color:#34d399">青</button>
+                <button class="btn sm" data-accent="#a78bfa" style="border-color:#a78bfa">紫</button>
+                <button class="btn sm" data-accent="#fbbf24" style="border-color:#fbbf24">金</button>
+                <button class="btn sm" data-accent="#f472b6" style="border-color:#f472b6">粉</button>
+              </div>
+            </div>
+            <div class="sw-row">
+              <span class="lb">紧凑布局<small>减小间距，一屏放更多内容</small></span>
+              <label class="switch"><input type="checkbox" id="setCompact"><i class="track"></i></label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3><span class="idx">B</span> AI 接口默认值</h3>
+            <div class="stack">
+              <div class="field">
+                <label>Base URL</label>
+                <input type="text" id="setBase" placeholder="https://api.openai.com/v1">
+              </div>
+              <div class="field">
+                <label>API Key</label>
+                <input type="password" id="setKey" placeholder="sk-...">
+                <span class="hint">密钥仅保存在本机浏览器 localStorage，不经过任何第三方。</span>
+              </div>
+              <div class="field">
+                <label>默认模型</label>
+                <input type="text" id="setModel" placeholder="gpt-4o-mini">
+              </div>
+              <div class="field">
+                <label>系统提示词</label>
+                <textarea id="setSystem" placeholder="你是我的私人助理，回答简洁准确。"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3><span class="idx">C</span> 穿透控制端</h3>
+            <div class="stack">
+              <div class="field">
+                <label>控制端地址</label>
+                <input type="text" id="setCtrl" placeholder="http://127.0.0.1:7400">
+                <span class="hint">需要实现 GET /api/status、POST /api/tunnel/start、POST /api/tunnel/stop。</span>
+              </div>
+              <div class="field">
+                <label>访问令牌</label>
+                <input type="password" id="setCtrlToken" placeholder="可选，作为 Bearer 发送">
+              </div>
+              <div class="field">
+                <label>公网域名（可选）</label>
+                <input type="text" id="setPubHost" placeholder="tun.example.com">
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3><span class="idx">D</span> 数据</h3>
+            <div class="kv" style="margin-bottom:11px"><span>占用空间</span><span id="storageSize">—</span></div>
+            <div class="kv" style="margin-bottom:14px"><span>对话条数</span><span id="storageMsgs">—</span></div>
+            <div class="row wrap">
+              <button class="btn sm" id="btnExportJson">导出全部数据</button>
+              <button class="btn sm" id="btnImportJson">导入数据</button>
+            </div>
+          </div>
+
+          <div class="card danger-zone">
+            <h3><span class="idx">!</span> 危险操作</h3>
+            <div class="stack">
+              <div class="row">
+                <span class="spacer"></span>
+                <button class="btn sm danger" id="btnClearChat">清空全部对话</button>
+              </div>
+              <div class="row">
+                <span class="spacer"></span>
+                <button class="btn sm danger" id="btnReset">恢复出厂设置</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div id="toasts"></div>
+<input type="file" id="filePick" accept="application/json" style="display:none">
+
+<script>
+(function(){
+"use strict";
+
+/* ===================== 存储层 ===================== */
+var KEY = "pconsole.v1";
+
+var DEFAULTS = {
+  settings: {
+    theme: "dark",
+    accent: "#6ea8ff",
+    compact: false,
+    api: {
+      base: "https://api.openai.com/v1",
+      key: "",
+      model: "gpt-4o-mini",
+      system: "你是我的私人助理，回答简洁、准确、直接。",
+      temp: 0.7,
+      maxTok: 2048,
+      stream: true
+    },
+    tunnel: {
+      control: "",
+      token: "",
+      pubHost: ""
+    }
+  },
+  tunnels: [],
+  chat: { messages: [], tokens: null, latency: null }
+};
+
+var store = load();
+
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+
+function load(){
+  try {
+    var raw = localStorage.getItem(KEY);
+    if(!raw) return clone(DEFAULTS);
+    var d = JSON.parse(raw);
+    var out = clone(DEFAULTS);
+    if(d.settings){
+      for(var k in out.settings){
+        if(d.settings[k] !== undefined){
+          if(typeof out.settings[k] === "object" && out.settings[k] && !Array.isArray(out.settings[k])){
+            for(var k2 in out.settings[k]){
+              if(d.settings[k][k2] !== undefined) out.settings[k][k2] = d.settings[k][k2];
+            }
+          } else {
+            out.settings[k] = d.settings[k];
+          }
+        }
+      }
+    }
+    if(Array.isArray(d.tunnels)) out.tunnels = d.tunnels;
+    if(d.chat && Array.isArray(d.chat.messages)) out.chat = d.chat;
+    return out;
+  } catch(e){
+    return clone(DEFAULTS);
+  }
+}
+
+var saveTimer = null;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function(){
+    try { localStorage.setItem(KEY, JSON.stringify(store)); }
+    catch(e){ toast("本地存储写入失败：" + e.message, "err"); }
+  }, 120);
+}
+
+/* ===================== 工具 ===================== */
+function $(s){ return document.querySelector(s); }
+function $$(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
+
+function esc(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function toast(msg, kind){
+  var box = $("#toasts");
+  var el = document.createElement("div");
+  el.className = "toast" + (kind ? " " + kind : "");
+  el.textContent = msg;
+  box.appendChild(el);
+  setTimeout(function(){
+    el.style.transition = "opacity .25s,transform .25s";
+    el.style.opacity = "0";
+    el.style.transform = "translateY(8px)";
+    setTimeout(function(){ el.remove(); }, 260);
+  }, kind === "err" ? 4200 : 2400);
+}
+
+function uid(){
+  return "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+function fmtTime(ts){
+  var d = new Date(ts);
+  var p = function(n){ return n < 10 ? "0" + n : "" + n; };
+  return p(d.getHours()) + ":" + p(d.getMinutes());
+}
+
+function nowText(){
+  var d = new Date();
+  var p = function(n){ return n < 10 ? "0" + n : "" + n; };
+  return d.getFullYear() + "-" + p(d.getMonth()+1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+
+/* 极简 markdown：代码块 / 行内代码 / 加粗 */
+function renderMD(s){
+  var blocks = [];
+  var t = String(s).replace(/```[a-zA-Z0-9_+-]*\n?([\s\S]*?)```/g, function(m, code){
+    blocks.push(code.replace(/^\n+|\n+$/g, ""));
+    return "\u0000B" + (blocks.length - 1) + "\u0000";
+  });
+  t = esc(t);
+  t = t.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+  t = t.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+  t = t.replace(/\n/g, "<br>");
+  t = t.replace(/\u0000B(\d+)\u0000/g, function(m, i){
+    return "</p><pre><code>" + esc(blocks[Number(i)]) + "</code></pre><p>";
+  });
+  return "<p>" + t + "</p>";
+}
+
+/* ===================== 视图切换 ===================== */
+var currentView = "chat";
+
+function switchView(name){
+  currentView = name;
+  $$(".view").forEach(function(v){ v.classList.remove("active"); });
+  $("#view-" + name).classList.add("active");
+  $$(".nav-item").forEach(function(b){
+    b.classList.toggle("active", b.dataset.view === name);
+  });
+  if(name === "tunnel") renderTunnels();
+  if(name === "settings") refreshSettingsStats();
+}
+$$(".nav-item").forEach(function(b){
+  b.addEventListener("click", function(){ switchView(b.dataset.view); });
+});
+
+/* ===================== 主题 ===================== */
+function applyTheme(){
+  var t = store.settings.theme;
+  var mode = t;
+  if(t === "auto"){
+    mode = (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
+  }
+  document.documentElement.setAttribute("data-theme", mode);
+  document.documentElement.setAttribute("data-compact", store.settings.compact ? "1" : "0");
+  document.documentElement.style.setProperty("--accent", store.settings.accent || "#6ea8ff");
+
+  $$(".theme-opts button").forEach(function(b){
+    b.classList.toggle("on", b.dataset.theme === t);
+  });
+  $$("#accentRow button").forEach(function(b){
+    var on = b.dataset.accent === store.settings.accent;
+    b.style.opacity = on ? "1" : ".55";
+    b.style.fontWeight = on ? "650" : "400";
+  });
+  var sc = $("#setCompact");
+  if(sc) sc.checked = !!store.settings.compact;
+}
+if(window.matchMedia){
+  var mq = window.matchMedia("(prefers-color-scheme: light)");
+  var mqHandler = function(){ if(store.settings.theme === "auto") applyTheme(); };
+  if(mq.addEventListener) mq.addEventListener("change", mqHandler);
+  else if(mq.addListener) mq.addListener(mqHandler);
+}
+
+$$(".theme-opts button").forEach(function(b){
+  b.addEventListener("click", function(){
+    store.settings.theme = b.dataset.theme;
+    applyTheme(); save();
+  });
+});
+$$("#accentRow button").forEach(function(b){
+  b.addEventListener("click", function(){
+    store.settings.accent = b.dataset.accent;
+    applyTheme(); save();
+  });
+});
+$("#setCompact").addEventListener("change", function(e){
+  store.settings.compact = e.target.checked;
+  applyTheme(); save();
+});
+
+/* ===================== 状态指示 ===================== */
+function refreshStatus(){
+  var api = store.settings.api;
+  var okApi = !!(api.base && api.key);
+  $("#apiDot").className = "dot " + (okApi ? "on" : "off");
+  $("#apiStat").textContent = okApi ? ("API · " + (api.model || "默认模型")) : "API 未配置";
+
+  var live = store.tunnels.filter(function(t){ return t.status === "running"; }).length;
+  $("#tunDot").className = "dot " + (live ? "on" : (store.settings.tunnel.control ? "off" : ""));
+  $("#tunStat").textContent = live ? ("穿透 · " + live + " 条在线")
+    : (store.settings.tunnel.control ? "穿透 · 无在线隧道" : "穿透未连接");
+
+  var badge = $("#ctrlBadge");
+  if(!store.settings.tunnel.control){
+    badge.className = "badge"; badge.textContent = "控制端未配置";
+  } else {
+    badge.className = "badge warn"; badge.textContent = "控制端已配置";
+  }
+  $("#ctrlUrlShow").textContent = store.settings.tunnel.control || "未配置控制端地址";
+
+  // 侧边导航徽标
+  var chatCnt = $("#navChatCnt");
+  var n = store.chat.messages.length;
+  if(n > 0){ chatCnt.style.display = ""; chatCnt.textContent = n; }
+  else chatCnt.style.display = "none";
+
+  var tunCnt = $("#navTunCnt");
+  if(live > 0){ tunCnt.style.display = ""; tunCnt.textContent = live; }
+  else tunCnt.style.display = "none";
+}
+
+/* ===================== 聊天 ===================== */
+var chatLog = $("#chatLog");
+var chatInput = $("#chatInput");
+var sendBtn = $("#sendBtn");
+var stopBtn = $("#stopBtn");
+var controller = null;
+var busy = false;
+
+function syncChatInputs(){
+  var a = store.settings.api;
+  $("#cfgBase").value = a.base || "";
+  $("#cfgKey").value = a.key || "";
+  $("#cfgModel").value = a.model || "";
+  $("#cfgTemp").value = a.temp;
+  $("#tempVal").textContent = Number(a.temp).toFixed(1);
+  $("#cfgMaxTok").value = a.maxTok || "";
+  $("#cfgSystem").value = a.system || "";
+  $("#cfgStream").checked = !!a.stream;
+
+  $("#setBase").value = a.base || "";
+  $("#setKey").value = a.key || "";
+  $("#setModel").value = a.model || "";
+  $("#setSystem").value = a.system || "";
+
+  $("#setCtrl").value = store.settings.tunnel.control || "";
+  $("#setCtrlToken").value = store.settings.tunnel.token || "";
+  $("#setPubHost").value = store.settings.tunnel.pubHost || "";
+}
+
+function bindApiField(sel, path){
+  var el = $(sel);
+  el.addEventListener("input", function(){
+    var parts = path.split(".");
+    var obj = store.settings;
+    for(var i = 0; i < parts.length - 1; i++) obj = obj[parts[i]];
+    obj[parts[parts.length - 1]] = el.value;
+    save(); refreshStatus();
+  });
+}
+bindApiField("#cfgBase", "api.base");
+bindApiField("#cfgKey", "api.key");
+bindApiField("#cfgModel", "api.model");
+bindApiField("#cfgSystem", "api.system");
+bindApiField("#setBase", "api.base");
+bindApiField("#setKey", "api.key");
+bindApiField("#setModel", "api.model");
+bindApiField("#setSystem", "api.system");
+
+$("#setCtrl").addEventListener("input", function(e){
+  store.settings.tunnel.control = e.target.value.trim();
+  save(); refreshStatus();
+});
+$("#setCtrlToken").addEventListener("input", function(e){
+  store.settings.tunnel.token = e.target.value;
+  save();
+});
+$("#setPubHost").addEventListener("input", function(e){
+  store.settings.tunnel.pubHost = e.target.value.trim();
+  save();
+});
+
+$("#cfgTemp").addEventListener("input", function(e){
+  store.settings.api.temp = Number(e.target.value);
+  $("#tempVal").textContent = Number(e.target.value).toFixed(1);
+  save();
+});
+$("#cfgMaxTok").addEventListener("input", function(e){
+  store.settings.api.maxTok = Number(e.target.value) || 0;
+  save();
+});
+$("#cfgStream").addEventListener("change", function(e){
+  store.settings.api.stream = e.target.checked;
+  save();
+});
+
+$("#toggleSide").addEventListener("click", function(){
+  $("#chatSide").classList.toggle("show");
+});
+
+function renderChat(){
+  var msgs = store.chat.messages;
+  chatLog.innerHTML = "";
+  if(!msgs.length){
+    var e = document.createElement("div");
+    e.className = "empty";
+    e.innerHTML = '<div class="big"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.9 8.9 0 0 1-4-.9L3 21l1.9-4.5A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/></svg></div><p>还没有对话。先在右侧确认接口地址与密钥，然后开始第一句话。</p>';
+    chatLog.appendChild(e);
+  } else {
+    msgs.forEach(function(m){
+      chatLog.appendChild(buildMsgNode(m));
+    });
+  }
+  updateChatStats();
+  scrollBottom();
+}
+
+function buildMsgNode(m){
+  var wrap = document.createElement("div");
+  wrap.className = "msg " + m.role;
+
+  var av = document.createElement("div");
+  av.className = "av";
+  av.textContent = m.role === "user" ? "我" : "AI";
+
+  var bub = document.createElement("div");
+  bub.className = "bub";
+
+  var who = document.createElement("div");
+  who.className = "who";
+  who.textContent = (m.role === "user" ? "我" : (m.model || "assistant")) + " · " + fmtTime(m.ts || Date.now());
+
+  var txt = document.createElement("div");
+  txt.className = "txt";
+  if(m.role === "user") {
+    txt.innerHTML = "<p>" + esc(m.content).replace(/\n/g, "<br>") + "</p>";
+  } else {
+    txt.innerHTML = renderMD(m.content || "");
+  }
+
+  bub.appendChild(who);
+  bub.appendChild(txt);
+
+  if(m.role === "assistant" && m.content){
+    var meta = document.createElement("div");
+    meta.className = "meta";
+    var bits = [];
+    if(m.usage) bits.push(m.usage.total_tokens + " tok");
+    if(m.ms) bits.push(m.ms + " ms");
+    meta.textContent = bits.join("  ·  ");
+    if(bits.length) bub.appendChild(meta);
+  }
+
+  var copyBtn = document.createElement("button");
+  copyBtn.className = "btn ghost sm";
+  copyBtn.style.cssText = "position:absolute;right:0;top:0;opacity:0;font-size:11px;padding:2px 7px";
+  copyBtn.textContent = "复制";
+  copyBtn.addEventListener("click", function(){
+    navigator.clipboard.writeText(m.content || "").then(function(){
+      toast("已复制", "ok");
+    }, function(){ toast("复制失败", "err"); });
+  });
+  bub.style.position = "relative";
+  bub.appendChild(copyBtn);
+  bub.addEventListener("mouseenter", function(){ copyBtn.style.opacity = "1"; });
+  bub.addEventListener("mouseleave", function(){ copyBtn.style.opacity = "0"; });
+
+  wrap.appendChild(av);
+  wrap.appendChild(bub);
+  return wrap;
+}
+
+function scrollBottom(){
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+function updateChatStats(){
+  var msgs = store.chat.messages;
+  $("#statMsgs").textContent = msgs.length;
+  $("#statTok").textContent = store.chat.tokens ? store.chat.tokens : "—";
+  $("#statLat").textContent = store.chat.latency ? (store.chat.latency + " ms") : "—";
+}
+
+function autoGrow(el){
+  el.style.height = "auto";
+  el.style.height = Math.min(el.scrollHeight, 220) + "px";
+}
+
+chatInput.addEventListener("input", function(){ autoGrow(chatInput); });
+chatInput.addEventListener("keydown", function(e){
+  if(e.key === "Enter" && (e.ctrlKey || e.metaKey)){
+    e.preventDefault();
+    send();
+  }
+});
+
+$("#sendBtn").addEventListener("click", send);
+stopBtn.addEventListener("click", function(){
+  if(controller){ try{ controller.abort(); }catch(e){} }
+});
+
+$("#clearChat").addEventListener("click", function(){
+  if(!store.chat.messages.length) return;
+  if(!confirm("清空当前全部对话？")) return;
+  store.chat.messages = [];
+  store.chat.tokens = null;
+  store.chat.latency = null;
+  save(); renderChat(); refreshStatus();
+});
+
+function setBusy(v){
+  busy = v;
+  sendBtn.disabled = v;
+  stopBtn.style.display = v ? "inline-flex" : "none";
+}
+
+function send(){
+  if(busy) return;
+  var text = chatInput.value.trim();
+  if(!text) return;
+
+  var api = store.settings.api;
+  if(!api.base || !api.key){
+    toast("请先在「我的设置」里填写 Base URL 与 API Key", "err");
+    switchView("settings");
+    return;
+  }
+
+  chatInput.value = "";
+  autoGrow(chatInput);
+
+  store.chat.messages.push({ role: "user", content: text, ts: Date.now() });
+  save(); renderChat(); refreshStatus();
+
+  var holder = document.createElement("div");
+  holder.className = "msg assistant";
+  holder.innerHTML = '<div class="av">AI</div><div class="bub"><div class="who">assistant · 生成中</div>'
+    + '<div class="txt typing"><i></i><i></i><i></i></div></div>';
+  chatLog.appendChild(holder);
+  scrollBottom();
+
+  var txtBox = holder.querySelector(".txt");
+  var whoBox = holder.querySelector(".who");
+
+  var payload = {
+    model: api.model || "gpt-4o-mini",
+    messages: buildMessages(text),
+    temperature: Number(api.temp) || 0,
+    stream: !!api.stream
+  };
+  if(api.maxTok && api.maxTok > 0) payload.max_tokens = Number(api.maxTok);
+
+  var url = String(api.base).replace(/\/+$/, "") + "/chat/completions";
+  var started = Date.now();
+  var acc = "";
+  var usage = null;
+
+  controller = new AbortController();
+  setBusy(true);
+
+  fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + api.key
+    },
+    body: JSON.stringify(payload),
+    signal: controller.signal
+  }).then(function(res){
+    if(!res.ok){
+      return res.text().then(function(t){
+        throw new Error("HTTP " + res.status + " · " + t.slice(0, 300));
+      });
+    }
+    if(api.stream && res.body && res.body.getReader){
+      return readStream(res, function(delta){
+        acc += delta;
+        txtBox.classList.remove("typing");
+        txtBox.innerHTML = renderMD(acc);
+        scrollBottom();
+      }, function(u){ usage = u; });
+    }
+    return res.json().then(function(j){
+      var c = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+      acc = c || "(空回复)";
+      usage = j.usage || null;
+      txtBox.classList.remove("typing");
+      txtBox.innerHTML = renderMD(acc);
+      scrollBottom();
+    });
+  }).then(function(){
+    finish();
+  }).catch(function(err){
+    if(err && err.name === "AbortError"){
+      if(acc) finish(true);
+      else {
+        holder.remove();
+        toast("已停止", "");
+      }
+      return;
+    }
+    holder.remove();
+    toast(err && err.message ? err.message : "请求失败", "err");
+    setBusy(false); controller = null;
+  });
+
+  function finish(aborted){
+    setBusy(false);
+    controller = null;
+    if(!acc) acc = "(空回复)";
+    var ms = Date.now() - started;
+    whoBox.textContent = "assistant · " + fmtTime(Date.now());
+    txtBox.classList.remove("typing");
+    txtBox.innerHTML = renderMD(acc);
+    holder.dataset.done = "1";
+
+    var totalTok = usage ? usage.total_tokens : null;
+    if(totalTok) store.chat.tokens = (store.chat.tokens || 0) + totalTok;
+    store.chat.latency = ms;
+    store.chat.messages.push({
+      role: "assistant",
+      content: acc,
+      ts: Date.now(),
+      model: payload.model,
+      usage: usage,
+      ms: ms,
+      aborted: !!aborted
+    });
+    save(); renderChat(); refreshStatus();
+  }
+}
+
+function buildMessages(lastUser){
+  var api = store.settings.api;
+  var out = [];
+  if(api.system) out.push({ role: "system", content: api.system });
+  // 只保留最近 30 条，避免上下文过长
+  var hist = store.chat.messages.slice(-30);
+  hist.forEach(function(m){
+    if(m.role === "user" || m.role === "assistant"){
+      out.push({ role: m.role, content: m.content });
+    }
+  });
+  if(!hist.length || hist[hist.length - 1].content !== lastUser){
+    out.push({ role: "user", content: lastUser });
+  }
+  return out;
+}
+
+function readStream(res, onDelta, onUsage){
+  var reader = res.body.getReader();
+  var decoder = new TextDecoder("utf-8");
+  var buf = "";
+
+  function pump(){
+    return reader.read().then(function(r){
+      if(r.done) return;
+      buf += decoder.decode(r.value, { stream: true });
+      var idx;
+      while((idx = buf.indexOf("\n")) >= 0){
+        var line = buf.slice(0, idx).replace(/\r$/, "");
+        buf = buf.slice(idx + 1);
+        if(!line || line.charAt(0) === ":") continue;
+        if(line.indexOf("data:") !== 0) continue;
+        var data = line.slice(5).trim();
+        if(data === "[DONE]") return;
+        try {
+          var j = JSON.parse(data);
+          if(j.usage) onUsage(j.usage);
+          var d = j.choices && j.choices[0];
+          if(!d) continue;
+          var piece = (d.delta && d.delta.content) || (d.message && d.message.content) || "";
+          if(piece) onDelta(piece);
+        } catch(e){ /* 忽略单行解析错误 */ }
+      }
+      return pump();
+    });
+  }
+  return pump();
+}
+
+/* ===================== 内网穿透 ===================== */
+function saveTunnels(){ save(); }
+
+function ctrlHeaders(){
+  var h = { "Content-Type": "application/json" };
+  var tk = store.settings.tunnel.token;
+  if(tk) h["Authorization"] = "Bearer " + tk;
+  return h;
+}
+
+function ctrlUrl(path){
+  var base = String(store.settings.tunnel.control || "").replace(/\/+$/, "");
+  return base + path;
+}
+
+function guessPublicUrl(t){
+  var host = store.settings.tunnel.pubHost;
+  if(!host) return "";
+  if(t.proto === "tcp") return host + ":" + t.port;
+  return (t.proto === "https" ? "https://" : "http://") + (t.slug ? t.slug + "." : "") + host;
+}
+
+function renderTunnels(){
+  var list = $("#tunList");
+  list.innerHTML = "";
+  $("#tunCount").textContent = store.tunnels.length;
+
+  if(!store.tunnels.length){
+    list.innerHTML = '<div class="empty" style="padding:30px"><p>还没有映射。在上方填写名称与本地端口后添加。</p></div>';
+    return;
+  }
+
+  store.tunnels.forEach(function(t){
+    var el = document.createElement("div");
+    el.className = "tun" + (t.status === "running" ? " live" : "");
+
+    var badge = t.status === "running"
+      ? '<span class="badge on">运行中</span>'
+      : (t.status === "starting" ? '<span class="badge warn">启动中</span>' : '<span class="badge">已停止</span>');
+
+    var pub = t.publicUrl || guessPublicUrl(t);
+
+    el.innerHTML =
+      '<div class="lead">'
+      +   '<div class="name">' + esc(t.name) + badge + '</div>'
+      +   '<div class="meta">'
+      +     '<span>127.0.0.1:' + t.port + '</span>'
+      +     '<span>' + t.proto.toUpperCase() + '</span>'
+      +     '<span style="opacity:.6">' + esc(t.id) + '</span>'
+      +   '</div>'
+      +   (pub ? '<div class="pub">' + esc(pub) + '</div>' : '')
+      +   (t.error ? '<div style="font-size:11.5px;color:var(--err);margin-top:5px">' + esc(t.error) + '</div>' : '')
+      + '</div>'
+      + '<div class="acts"></div>';
+
+    var acts = el.querySelector(".acts");
+
+    var btnToggle = document.createElement("button");
+    btnToggle.className = "btn sm " + (t.status === "running" ? "" : "ok");
+    btnToggle.textContent = t.status === "running" ? "停止" : "启动";
+    btnToggle.addEventListener("click", function(){
+      if(t.status === "running") stopTunnel(t, btnToggle);
+      else startTunnel(t, btnToggle);
+    });
+
+    var btnCopy = document.createElement("button");
+    btnCopy.className = "btn sm ghost";
+    btnCopy.textContent = "复制";
+    btnCopy.addEventListener("click", function(){
+      var u = t.publicUrl || guessPublicUrl(t);
+      if(!u){ toast("暂无公网地址", "err"); return; }
+      navigator.clipboard.writeText(u).then(function(){ toast("已复制 " + u, "ok"); },
+        function(){ toast("复制失败", "err"); });
+    });
+
+    var btnDel = document.createElement("button");
+    btnDel.className = "btn sm danger";
+    btnDel.textContent = "删除";
+    btnDel.addEventListener("click", function(){
+      if(!confirm("删除映射「" + t.name + "」？")) return;
+      store.tunnels = store.tunnels.filter(function(x){ return x.id !== t.id; });
+      saveTunnels(); renderTunnels(); refreshStatus();
+    });
+
+    acts.appendChild(btnToggle);
+    acts.appendChild(btnCopy);
+    acts.appendChild(btnDel);
+    list.appendChild(el);
+  });
+}
+
+function startTunnel(t, btn){
+  var ctrl = store.settings.tunnel.control;
+  t.error = "";
+  if(!ctrl){
+    t.status = "stopped";
+    t.publicUrl = guessPublicUrl(t) || "";
+    saveTunnels(); renderTunnels();
+    toast("未配置控制端：仅保存配置，隧道未真正建立", "");
+    return;
+  }
+  btn.disabled = true;
+  t.status = "starting";
+  saveTunnels(); renderTunnels();
+
+  fetch(ctrlUrl("/api/tunnel/start"), {
+    method: "POST",
+    headers: ctrlHeaders(),
+    body: JSON.stringify({ id: t.id, name: t.name, localPort: Number(t.port), protocol: t.proto })
+  }).then(function(r){
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    return r.json().catch(function(){ return {}; });
+  }).then(function(j){
+    t.status = "running";
+    t.publicUrl = j.publicUrl || j.url || guessPublicUrl(t) || "";
+    t.slug = j.slug || t.slug || "";
+    t.startedAt = Date.now();
+    saveTunnels(); renderTunnels(); refreshStatus();
+    toast("隧道已启动：" + (t.publicUrl || t.name), "ok");
+  }).catch(function(err){
+    t.status = "stopped";
+    t.error = "启动失败：" + (err.message || err);
+    saveTunnels(); renderTunnels(); refreshStatus();
+    toast(t.error, "err");
+  });
+}
+
+function stopTunnel(t, btn){
+  var ctrl = store.settings.tunnel.control;
+  btn.disabled = true;
+  if(!ctrl){
+    t.status = "stopped"; t.publicUrl = "";
+    saveTunnels(); renderTunnels(); refreshStatus();
+    return;
+  }
+  fetch(ctrlUrl("/api/tunnel/stop"), {
+    method: "POST",
+    headers: ctrlHeaders(),
+    body: JSON.stringify({ id: t.id })
+  }).then(function(r){
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    return r.json().catch(function(){ return {}; });
+  }).then(function(){
+    t.status = "stopped"; t.publicUrl = "";
+    saveTunnels(); renderTunnels(); refreshStatus();
+    toast("已停止：" + t.name, "ok");
+  }).catch(function(err){
+    t.error = "停止失败：" + (err.message || err);
+    saveTunnels(); renderTunnels();
+    toast(t.error, "err");
+  });
+}
+
+$("#addTun").addEventListener("click", function(){
+  var name = $("#tunName").value.trim();
+  var port = Number($("#tunPort").value);
+  var proto = $("#tunProto").value;
+
+  if(!name){ toast("请填写名称", "err"); return; }
+  if(!port || port < 1 || port > 65535){ toast("端口需在 1-65535 之间", "err"); return; }
+  if(store.tunnels.some(function(t){ return t.port === port && t.proto === proto; })){
+    toast("该端口与协议已存在映射", "err"); return;
+  }
+
+  store.tunnels.push({
+    id: uid(), name: name, port: port, proto: proto,
+    status: "stopped", publicUrl: "", startedAt: null, error: ""
+  });
+  $("#tunName").value = "";
+  $("#tunPort").value = "";
+  saveTunnels(); renderTunnels(); refreshStatus();
+  toast("已添加映射", "ok");
+});
+
+$("#refreshTun").addEventListener("click", function(){
+  var ctrl = store.settings.tunnel.control;
+  if(!ctrl){ toast("未配置控制端", "err"); return; }
+  fetch(ctrlUrl("/api/status"), { headers: ctrlHeaders() })
+    .then(function(r){
+      if(!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })
+    .then(function(j){
+      var map = {};
+      (j.tunnels || []).forEach(function(x){ if(x && x.id) map[x.id] = x; });
+      store.tunnels.forEach(function(t){
+        var r2 = map[t.id];
+        if(!r2) return;
+        t.status = r2.status === "running" ? "running" : "stopped";
+        if(r2.publicUrl || r2.url) t.publicUrl = r2.publicUrl || r2.url;
+      });
+      saveTunnels(); renderTunnels(); refreshStatus();
+      toast("状态已同步", "ok");
+    })
+    .catch(function(err){
+      toast("同步失败：" + (err.message || err), "err");
+    });
+});
+
+$("#pingCtrl").addEventListener("click", function(){
+  var ctrl = store.settings.tunnel.control;
+  if(!ctrl){ toast("未配置控制端", "err"); return; }
+  var bar = $("#dialBar"), val = $("#dialVal");
+  bar.style.width = "35%"; val.textContent = "…";
+  var t0 = performance.now();
+  fetch(ctrlUrl("/api/status"), { headers: ctrlHeaders(), cache: "no-store" })
+    .then(function(r){
+      var ms = Math.round(performance.now() - t0);
+      bar.style.width = Math.min(100, Math.max(6, 100 - ms / 20)) + "%";
+      val.textContent = ms + " ms";
+      if(!r.ok) throw new Error("HTTP " + r.status);
+      toast("控制端可达 · " + ms + " ms", "ok");
+    })
+    .catch(function(err){
+      bar.style.width = "0%"; val.textContent = "失败";
+      toast("控制端不可达：" + (err.message || err), "err");
+    });
+});
+
+/* ===================== 设置：数据 ===================== */
+function refreshSettingsStats(){
+  var raw = "";
+  try { raw = localStorage.getItem(KEY) || ""; } catch(e){}
+  $("#storageSize").textContent = (raw.length / 1024).toFixed(1) + " KB";
+  $("#storageMsgs").textContent = store.chat.messages.length + " 条";
+  syncChatInputs();
+  $("#ctrlUrlShow").textContent = store.settings.tunnel.control || "未配置";
+}
+
+function download(filename, text){
+  var blob = new Blob([text], { type: "application/json;charset=utf-8" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 100);
+}
+
+function fullDump(){
+  return JSON.stringify({
+    exportedAt: new Date().toISOString(),
+    version: 1,
+    settings: store.settings,
+    tunnels: store.tunnels,
+    chat: store.chat
+  }, null, 2);
+}
+
+$("#exportCfg").addEventListener("click", function(){
+  download("console-config-" + Date.now() + ".json", fullDump());
+  toast("配置已导出", "ok");
+});
+$("#btnExportJson").addEventListener("click", function(){
+  download("console-data-" + Date.now() + ".json", fullDump());
+  toast("全部数据已导出", "ok");
+});
+
+$("#importCfg").addEventListener("click", function(){ $("#filePick").click(); });
+$("#btnImportJson").addEventListener("click", function(){ $("#filePick").click(); });
+
+$("#filePick").addEventListener("change", function(e){
+  var f = e.target.files && e.target.files[0];
+  if(!f) return;
+  var rd = new FileReader();
+  rd.onload = function(){
+    try {
+      var d = JSON.parse(rd.result);
+      if(d.settings) store.settings = mergeDeep(clone(DEFAULTS.settings), d.settings);
+      if(Array.isArray(d.tunnels)) store.tunnels = d.tunnels;
+      if(d.chat && Array.isArray(d.chat.messages)) store.chat = d.chat;
+      save();
+      setTimeout(function(){
+        applyTheme(); syncChatInputs(); renderChat(); renderTunnels();
+        refreshStatus(); refreshSettingsStats();
+      }, 160);
+      toast("导入成功", "ok");
+    } catch(err){
+      toast("导入失败：" + err.message, "err");
+    }
+    e.target.value = "";
+  };
+  rd.readAsText(f, "utf-8");
+});
+
+function mergeDeep(base, over){
+  for(var k in over){
+    if(over[k] && typeof over[k] === "object" && !Array.isArray(over[k])
+      && base[k] && typeof base[k] === "object" && !Array.isArray(base[k])){
+      mergeDeep(base[k], over[k]);
+    } else if(over[k] !== undefined){
+      base[k] = over[k];
+    }
+  }
+  return base;
+}
+
+$("#btnClearChat").addEventListener("click", function(){
+  if(!confirm("清空全部对话记录？此操作不可撤销。")) return;
+  store.chat = { messages: [], tokens: null, latency: null };
+  save(); setTimeout(function(){ renderChat(); refreshSettingsStats(); refreshStatus(); }, 160);
+  toast("对话已清空", "ok");
+});
+
+$("#btnReset").addEventListener("click", function(){
+  if(!confirm("恢复出厂设置？所有配置与数据将被删除。")) return;
+  try { localStorage.removeItem(KEY); } catch(e){}
+  store = clone(DEFAULTS);
+  applyTheme(); syncChatInputs(); renderChat(); renderTunnels();
+  refreshStatus(); refreshSettingsStats();
+  toast("已恢复出厂设置", "ok");
+});
+
+/* ===================== 启动 ===================== */
+applyTheme();
+syncChatInputs();
+renderChat();
+renderTunnels();
+refreshStatus();
+refreshSettingsStats();
+
+setInterval(function(){
+  if(currentView === "settings") refreshSettingsStats();
+}, 5000);
+
+})();
+</script>
+</body>
+</html>
